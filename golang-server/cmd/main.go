@@ -2,7 +2,6 @@
 package main
 
 import (
-	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"time"
@@ -28,28 +27,11 @@ func main() {
 		MaxAge:           300, // Max value for preflight request cache
 	}))
 
-	r.Use(BasicAuth("admin", "passworddddddddd"))
-
 	// Routes
 	r.Get("/rest/v1/iotime", IOTaskHandler)
 
 	// Start Server
 	http.ListenAndServe(":8080", r)
-}
-
-// BasicAuth middleware for simple username/password authentication
-func BasicAuth(username, password string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			u, p, ok := r.BasicAuth()
-			if !ok || subtle.ConstantTimeCompare([]byte(u), []byte(username)) != 1 || subtle.ConstantTimeCompare([]byte(p), []byte(password)) != 1 {
-				w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 // IOTaskHandler simulates a CPU-intensive task
