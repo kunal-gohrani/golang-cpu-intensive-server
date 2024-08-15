@@ -18,3 +18,6 @@ clean:
 	@echo "Cleaning up..."
 	rm -f $(BINARY_NAME) $(ZIP_NAME)
 	rm -rf dist $(ZIP_NAME)
+
+run: build
+	 ./dist/$(BINARY_NAME)
