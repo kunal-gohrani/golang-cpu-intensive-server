@@ -15,27 +15,22 @@ resource "aws_instance" "web" {
   instance_type   = "t2.micro"
   key_name        = "terraform"
   vpc_security_group_ids = [aws_security_group.allow_http.id]
-  user_data       = <<-EOF
-                #!/bin/bash
-                sudo apt-get update -y
-                sudo apt-get install -y git make
-                sudo apt install -y golang-go
-                git clone https://github.com/kunal-gohrani/golang-cpu-intensive-server /home/ubuntu/app
-                sudo chown -R ubuntu /home/ubuntu/app
-                cd /home/ubuntu/app/golang-server
-                make run
-                EOF
+
   tags = {
     Name = "GolangWebServer"
   }
-}
 
-output "instance_ip" {
-  value = aws_instance.web.public_ip
-}
+  connection {
+    user        = "ubuntu"
+    private_key = file("~/Downloads/terraform-3.pem")
+    host        = self.public_dns
+  } 
 
-output "instance_dns" {
-  value = aws_instance.web.public_dns
+  provisioner "remote-exec" {
+    when       = create
+    on_failure = fail
+    script = "../tools/application_initializer.sh"
+  }
 }
 
 resource "aws_security_group" "allow_http" {
