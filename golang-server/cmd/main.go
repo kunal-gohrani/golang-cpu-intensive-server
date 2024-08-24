@@ -2,8 +2,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,12 +13,31 @@ import (
 	"github.com/go-chi/cors"
 )
 
+var hostname string = ""
+
+type ctxKey string
+
+var hostnameCtxKey ctxKey = "hostname"
+
+func init() {
+	hostname, _ = os.Hostname()
+}
+
+func addHostNameMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, hostnameCtxKey, hostname)
+		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	r := chi.NewRouter()
 
 	// Middleware
 	r.Use(middleware.Logger)
-
+	r.Use(addHostNameMiddleware)
 	// CORS Middleware
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"}, // Allow all origins
@@ -45,5 +66,5 @@ func IOTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	duration := time.Since(start)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("CPU task completed in %s\n", duration)))
+	w.Write([]byte(fmt.Sprintf("CPU task completed in %s by host %s\n", duration, r.Context().Value(hostnameCtxKey))))
 }
